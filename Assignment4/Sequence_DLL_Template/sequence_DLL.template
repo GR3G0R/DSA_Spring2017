@@ -1,0 +1,54 @@
+//FILE: sequence_Dll.template
+
+#include<iostream>
+
+namespace delpe_sequenceDll_h
+{
+   template<class Item>
+   std::ostream& operator<<(std::ostream& os, SequenceDLL<Item>& seq)
+   {
+        int count = 0;
+        os << "Seq:= {";
+        dnode *cursor = seq.head_ptr;
+        while(cursor != NULL)
+        {
+            std::cout << cursor->data();
+            if(count < seq.size()-1)
+            {
+                os << ",";
+                count++;
+            }
+            cursor = cursor->fwd();
+        }
+        os << "}" << std::endl;
+        return os;
+   }
+
+   template<class Item>
+   std::istream& operator>>(std::istream& is, SequenceDLL<Item>& seq)
+   {
+       Item element;
+
+       is >> element;
+
+       seq.insert_back(element);
+
+       return is;
+   }
+
+   template<class Item>
+   Item operator+(const SequenceDLL<Item>& seq1, const SequenceDLL<Item>& seq2)
+   {
+       SequenceDLL<Item> temp = seq1;
+
+       temp += seq2;
+
+       return temp;
+   }
+
+   template<class Item>
+   bool operator==(const SequenceDLL<Item>& seq1, const SequenceDLL<Item>& seq2)
+   {
+       return seq1 == seq2;
+   }
+}

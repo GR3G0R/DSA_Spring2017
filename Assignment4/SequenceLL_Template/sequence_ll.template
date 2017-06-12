@@ -1,0 +1,65 @@
+//  FILE: sequence_ll.template
+
+#include <iostream>
+#include <cassert>
+#include <algorithm>
+#include <cstdlib>
+#include "node1.h"
+
+namespace delpe_sequencell_h
+{
+    template<class Item>
+    Item operator+(const SequenceLL<Item>& seq1, const SequenceLL<Item>& seq2)
+    {
+        SequenceLL<Item> temp = seq1;
+
+        temp += seq2;
+
+        return temp;
+    }
+
+    template<class Item>
+    bool operator==(const SequenceLL<Item>& seq1, const SequenceLL<Item>& seq2)
+    {
+       return seq1 == seq2;
+    }
+
+    template<class Item>
+    std::ostream& operator<<(std::ostream& os, SequenceLL<Item>& seq)
+    {
+        Item count = 0;
+        os << "Seq:= {";
+        for(seq.start(); seq.is_item(); seq.advance())
+        {
+            std::cout << seq.current();
+            if(count < (seq.size()-1))
+            {
+                os << ",";
+                count++;
+            }
+        }
+        os << "}" << std::endl;
+        return os;
+    }
+
+    template<class Item>
+    std::istream& operator>>(std::istream& is, const SequenceLL<Item>& seq)
+    {
+        Item element;
+
+        is >> element;
+        list_insert(seq.tail_ptr, element);
+
+        return is;
+    }
+
+    template<class Item>
+    void print_sequence(SequenceLL<Item> seq)
+    {
+
+        for(seq.start(); seq.is_item(); seq.advance())
+        {
+            std::cout << seq.current() << std::endl;
+        }
+    }
+}

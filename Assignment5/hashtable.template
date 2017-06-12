@@ -1,0 +1,464 @@
+//Gregory Delpe
+//Assignment#5: Templated Hashtable With Linkedlist->BST Optimization
+// FILE: hashtable.template
+// TEMPLATE CLASS IMPLEMENTED: HashTable
+// INVARIANT for the table ADT:
+//   1. The number of records in the table is in the member variable used.
+//   2. The actual records of the table are stored in the array data, with
+//      a default of TABLE_SIZE entries. Each used spot in the array has a
+//      non-negative key. Any unused record in the array has a key field of
+//      NULL (if it has never been used).
+
+#include <cassert>  // Provides assert
+#include <cstdlib>  // Provides size_t
+
+namespace delpe_hashtable_h
+{
+    template <class RecordType>
+    const std::size_t HashTable<RecordType>::TABLE_SIZE;
+
+
+    template <class RecordType>
+    HashTable<RecordType>::HashTable(const size_t& size)
+    {
+
+        used = size;
+
+        h_table = new LinkNode<RecordType>*[size];
+        ht_table = new TreeNode<RecordType>*[size];
+
+        for (std::size_t i = 0; i < TABLE_SIZE; ++i)
+        {
+            h_table[i] = NULL;
+            ht_table[i] = NULL;
+        }
+    }
+
+
+    /*template <class RecordType>
+    HashTable<RecordType>::HashTable()
+    {
+
+        used = TABLE_SIZE;
+
+        ht_table = new TreeNode<RecordType>*[TABLE_SIZE];
+
+        for (std::size_t i = 0; i < TABLE_SIZE; ++i)
+        {
+            ht_table[i] = NULL;
+        }
+    }*/
+
+    /*template <class RecordType>
+    HashTable<RecordType>::HashTable(const size_t& size)
+    {
+        std:size_t i;
+
+        used = size;
+
+        htable = new std::vector<TreeNode<RecordType>*>(used);
+
+        for(i = 0; i < size; ++i)
+        {
+            htable->at(i) = NULL;
+        }
+    }*/
+
+    template <class RecordType>
+    void HashTable<RecordType>::tree_put(int key,const RecordType& value)
+    {
+        int hash_code = hash(key);
+
+        if(htable->at(hash_code) == NULL)
+            htable->at(hash_code) = new TreeNode<RecordType>(key,value);
+        else
+            htable->at(hash_code)->add(key,value);
+
+        /*TreeNode<RecordType>* temp;
+        TreeNode<RecordType>* entry = htable[hash_code];
+        //if(entry == NULL)
+            entry = new TreeNode<RecordType>(key,value);
+        //else
+            //temp->set_link(entry);
+            //temp->add(value);*/
+    }
+
+    template <class RecordType>
+    void HashTable<RecordType>::display()
+    {
+        //int hash_code = hash(key);
+
+        //TreeNode<RecordType>* node = htable(hash_code);
+
+        for(int i = 0; i < used; i++)
+        {
+            std::cout << "[" << i << "] ";
+            if(htable->at(i) != NULL)
+            {
+                TreeNode<RecordType>* root_ptr = htable->at(i);
+                inorder(root_ptr);
+            }
+
+            std::cout << std::endl;
+        }
+    }
+
+    template <class RecordType>
+    void HashTable<RecordType>::inorder(TreeNode<RecordType>* root_ptr)
+    {
+        if(root_ptr != NULL)
+        {
+            inorder(root_ptr->left());
+            std::cout << root_ptr->value() << " ";
+            inorder(root_ptr->right());
+
+        }
+    }
+
+    template <class RecordType>
+    void HashTable<RecordType>::postorder(TreeNode<RecordType>* root_ptr)
+    {
+        if(root_ptr != NULL)
+        {
+            postorder(root_ptr->left());
+            postorder(root_ptr->right());
+            std::cout << root_ptr->value() << " ";
+
+        }
+    }
+
+    template <class RecordType>
+    void HashTable<RecordType>::preorder(TreeNode<RecordType>* root_ptr)
+    {
+        if(root_ptr != NULL)
+        {
+            std::cout << root_ptr->value() << " ";
+            preorder(root_ptr->left());
+            preorder(root_ptr->right());
+
+        }
+    }
+
+    template <class RecordType>
+    void HashTable<RecordType>::get_tree(int key)
+    {
+        int hash_code = hash(key);
+
+        if(htable->at(hash_code) != NULL)
+        {
+            TreeNode<RecordType>* root_ptr = htable->at(hash_code);
+            inorder(root_ptr);
+        }
+
+        std::cout << std::endl;
+    }
+
+    template <class RecordType>
+    void HashTable<RecordType>::put(int key, const RecordType& value)
+    {
+        put_tree(key,value);
+
+        int hash_code = hash(key);
+
+        LinkNode<RecordType>* temp = NULL;
+        LinkNode<RecordType>* entry = h_table[hash_code];
+
+        while(entry != NULL)
+        {
+            temp = entry;
+            entry = entry->link();
+        }
+
+        if(entry == NULL)
+        {
+            entry = new LinkNode<RecordType>(key,value);
+            if(temp == NULL)
+            {
+                h_table[hash_code] = entry;
+                ++total_records;
+            }
+            else
+            {
+                temp->set_link(entry);
+
+            }
+        }
+        else
+        {
+            entry->set_value(value);
+        }
+
+        if((total_records/used) == .75)
+        {
+            rehash();
+        }
+    }
+
+    template <class RecordType>
+    void HashTable<RecordType>::put_tree(int key, const RecordType& value)
+    {
+        int hash_code = hash(key);
+
+        TreeNode<RecordType>* root_ptr = ht_table[hash_code];
+
+        if(root_ptr == NULL)
+        {
+            root_ptr = new TreeNode<RecordType>(key,value);
+            //std::cout << root_ptr->value();
+            ht_table[hash_code] = root_ptr;
+        }
+        else
+        {
+            //ht_table[hash_code] = root_ptr;
+            root_ptr->add(key,value);
+        }
+    }
+
+    template <class RecordType>
+    int HashTable<RecordType>::link_count(int key)
+    {
+        int count = 0;
+
+        int hash_code = hash(key);
+
+        LinkNode<RecordType>* cursor = h_table[hash_code];
+
+        while(cursor != NULL)
+        {
+            ++count;
+            cursor = cursor->link();
+        }
+
+        return count;
+    }
+
+    template <class RecordType>
+    int HashTable<RecordType>::node_count(TreeNode<RecordType>* root_ptr) const
+    {
+        if(!root_ptr)
+            return 0;
+        else
+          return node_count(root_ptr->left()) + 1 + node_count(root_ptr->right());
+    }
+
+    template <class RecordType>
+    void HashTable<RecordType>::rehash()
+    {
+        size_t current_size = used;
+
+        used *= 2;
+
+        LinkNode<RecordType> **new_table = new LinkNode<RecordType>*[used];
+        TreeNode<RecordType> **new_tree_table = new TreeNode<RecordType>*[used];
+
+        for(size_t i = 0; i < used; ++i)
+        {
+            new_table[i] = NULL;
+            new_tree_table[i] = NULL;
+        }
+
+        for(int i = 0; i < current_size; ++i)
+        {
+            LinkNode<RecordType>* entry = h_table[i];
+            TreeNode<RecordType>* node = ht_table[i];
+
+            while(entry != NULL)
+            {
+                LinkNode<RecordType>* temp = entry;
+                TreeNode<RecordType>* tree_temp = node;
+                entry = entry->link();
+
+                LinkNode<RecordType>*& record = new_table[hash(temp->key) % used];
+                TreeNode<RecordType>*& tree_record = new_tree_table[hash(temp->key) % used];
+                temp->set_link(record);
+                record = temp;
+                tree_record = tree_temp;
+            }
+        }
+        delete [] h_table;
+        delete [] ht_table;
+        h_table = new_table;
+        ht_table = new_tree_table;
+    }
+
+    template <class RecordType>
+    void HashTable<RecordType>::remove(int key)
+    {
+        if(link_count(key) >= 8)
+        {
+            remove_tree(key);
+        }
+        else
+        {
+            int hash_code = hash(key);
+
+            LinkNode<RecordType>* entry = h_table[hash_code];
+            LinkNode<RecordType>* temp = NULL;
+
+            if((entry == NULL) || (entry->key != key)) return;
+
+            while(entry != NULL)
+            {
+                temp = entry;
+                entry = entry->link_field;
+                delete temp;
+            }
+            h_table[hash_code] = NULL;
+        }
+
+    }
+
+    template <class RecordType>
+    void HashTable<RecordType>::remove_tree(int key)
+    {
+        int hash_code = hash(key);
+
+        /*if(htable->at(hash_code) != NULL)
+        {
+            TreeNode<RecordType>* root_ptr = htable->at(hash_code);
+            tree_clear(root_ptr);
+        }
+        htable->at(hash_code) = NULL;*/
+
+        TreeNode<RecordType>* root_ptr = ht_table[hash_code];
+
+        if(root_ptr != NULL)
+        {
+            tree_clear(root_ptr);
+        }
+
+        ht_table[hash_code] = NULL;
+
+    }
+
+    template <class RecordType>
+    void HashTable<RecordType>::tree_clear(TreeNode<RecordType>*& root_ptr)
+    {
+	      TreeNode<RecordType>* child;
+	      if (root_ptr != NULL)
+	      {
+	          child = root_ptr->left();
+	          tree_clear(child);
+	          child = root_ptr->right();
+	          tree_clear(child);
+	          delete root_ptr;
+	          root_ptr = NULL;
+	      }
+    }
+
+    template<class RecordType>
+    void HashTable<RecordType>::show_table()
+    {
+        for(size_t i = 0; i < used; i++)
+        {
+            std::cout << "[" << i << "] ";
+            LinkNode<RecordType>* entry = h_table[i];
+            TreeNode<RecordType>* root_ptr = ht_table[i];
+
+            if(link_count(i) >= 8)
+            {
+                if(root_ptr != NULL)
+                {
+                    inorder(root_ptr);
+                }
+            }
+            else if (link_count(i) <= 6)
+            {
+                while(entry != NULL)
+                {
+                    std::cout << entry->value << " ";
+                    entry = entry->link_field;
+                }
+            }
+            std::cout << std::endl;
+        }
+    }
+
+
+    /*template<class RecordType>
+    void HashTable<RecordType>::show_table()
+    {
+        for(size_t i = 0; i < used; i++)
+        {
+            std::cout << "[" << i << "] ";
+            TreeNode<RecordType>* root_ptr = ht_table[i];
+            if(root_ptr != NULL)
+            {
+                inorder(root_ptr);
+                std::cout << " ";
+            }
+            std::cout << std::endl;
+        }
+    }*/
+
+    template<class RecordType>
+    void HashTable<RecordType>::get(int key)
+    {
+        bool flag = false;
+
+        int hash_code = hash(key);
+
+        LinkNode<RecordType>* entry = h_table[hash_code];
+        TreeNode<RecordType>* root_ptr = ht_table[hash_code];
+
+        if(node_count(root_ptr) >= 8)
+        {
+            if(root_ptr->get_key() == key)
+            {
+                inorder(root_ptr);
+                flag = true;
+            }
+        }
+        else
+        {
+            while(entry != NULL)
+            {
+                if(entry->key == key)
+                {
+                    std::cout << entry->value << " ";
+                    flag = true;
+                }
+
+                entry = entry->link_field;
+            }
+        }
+    }
+
+    template <class RecordType>
+    inline std::size_t HashTable<RecordType>::hash(int key) const
+    {
+        return (key % used);
+    }
+
+    template <class RecordType>
+    HashTable<RecordType>::~HashTable()
+    {
+       size_t i;
+
+       for (i = 0; i < TABLE_SIZE; ++i)
+       {
+           LinkNode<RecordType>* entry = h_table[i];
+
+           while(entry != NULL)
+           {
+               LinkNode<RecordType>* temp = entry;
+               entry = entry->link_field;
+               delete temp;
+           }
+
+       }
+
+       for(int j = 0; j < used; ++j)
+       {
+           if(htable->at(j) != NULL)
+           {
+               TreeNode<RecordType>* root_ptr = htable->at(j);
+               tree_clear(root_ptr);
+           }
+       }
+
+       delete [] h_table;
+       delete htable;
+    }
+
+}
